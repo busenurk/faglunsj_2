@@ -1,0 +1,1086 @@
+---
+title: "Figures and Tables in R"
+subtitle: 'Faglunsj 2025 - NSSF'
+title-slide-attributes:
+    data-background-image: /img/img_3.jpg
+    data-background-opacity: "0.5"
+author: Busenur Kizilaslan, PhD
+format: 
+  revealjs:
+    code-font-size: 1.8em   # increase font size globally
+    width: 1600
+    height: 900
+    margin: 0.05
+    min-scale: 0.5
+    max-scale: 2.0
+    theme: white
+    scrollable: true
+    smaller: true
+editor: visual
+editor_options: 
+  chunk_output_type: console
+execute:
+  cache: true
+---
+
+## 🔧 The Tools Behind the Analysis
+
+<br>
+
+**R offers a powerful environment for data analysis and visualization.**
+
+<br>
+
+In this session, we'll explore how to create clear, publication-quality tables and interactive figures that effectively communicate data-driven insights.
+
+<br>
+
+R offers many ways to create tables and figures. While there are numerous packages and functions that can accomplish the same goals, we'll highlight the ones I favor for clarity, flexibility, and interactivity.
+
+<br>
+
+::: {.fragment fragment-index="1"}
+-   [**gt:**]{style="color:#d5a252;"} Creates publication-quality tables with a clean, customizable layout. Perfect for static tables in reports or slides.
+:::
+
+::: {.fragment fragment-index="2"}
+-   [**gtsummary:**]{style="color:#d5a252;"} Builds summary tables for data analysis (e.g., descriptive statistics, regression results) and integrates seamlessly with gt.
+:::
+
+::: {.fragment fragment-index="3"}
+-   [**ggplot2:**]{style="color:#d5a252;"} The go-to package for static data visualization in R; implements the Grammar of Graphics for building flexible and layered plots.
+:::
+
+::: {.fragment fragment-index="4"}
+-   [**plotly:**]{style="color:#d5a252;"} Adds interactivity to your visualizations, turning ggplot2 plots or custom plots into dynamic charts that can zoom, hover, and filter.
+:::
+
+## Libraries
+
+This code chunk shows the loading of packages required for the analyses. In this handbook we emphasize [**p_load()**]{style="color:#d5a252;"} from pacman, which installs the package if necessary and loads it for use. You can also load installed packages with [**library()**]{style="color:#d5a252;"} from base R.
+
+<br>
+
+::: {.fragment fragment-index="2"}
+
+Of course, before using the **library()** function, you first need to install the packages using [**install.packages()**]{style="color:#d5a252;"}. However, if you use [**pacman**]{style="color:#d5a252;"}, there’s no need — it can handle installation and loading automatically.
+:::
+
+<br>
+
+
+```{r}
+#| echo: true
+#| warning: false
+
+pacman::p_load(
+  rio,          # File import
+  tidyverse,     
+  dplyr,
+  gt,
+  gtsummary,    
+  plotly,
+  ggalluvial)    
+```
+
+
+## Meet the Data!
+
+<br>
+
+The anonymized dataset from a GitHub repository [**dinisurunisal/
+Suicide-Risk-Prediction-Project**](https://github.com/dinisuruni
+sal/Suicide-Risk-Prediction-Project/blob/master/DataScience/AlgorithmComparison/Test-Data-10.csv) for a
+software development project in the UK based on data collected from Colombo South Teaching HospitalKalubowila in Sri Lanka that is publicly available to everyone.
+
+<br>
+
+::: columns
+::: {.column width="45%"}
+
+:::
+
+::: {.column width="55%"}
+
+::: {style="display:flex; justify-content:flex-end; align-items:flex-end; height:90%;"}
+<img src="img/data_source.png" style="width:70%;"/>
+:::
+
+:::
+:::
+
+## Meet the Data!
+
+<br>
+
+```{r}
+#| echo: true
+
+# import the data
+data <- import("data/data.RData")
+```
+
+<br>
+
+```{r}
+#| echo: true
+#| results: false
+
+data <- data %>% select(year, age, gender, marital_stat, psyk_dis, self_injury, sui) %>% 
+        tibble() 
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data <- data %>% select(year, age, gender, marital_stat, psyk_dis, self_injury, sui) %>% 
+        tibble()
+
+data %>% print()
+```
+
+<br>
+
+::: {.fragment fragment-index="2"}
+
+```{r}
+#| echo: true
+data$psyk_dis %>% table()
+```
+:::
+
+## GT
+
+<br>
+
+With the gt package, anyone can make wonderful-looking tables using the R programming language.
+
+**The gt philosophy:** we can construct a wide variety of useful tables with a cohesive set of table parts. These include the table header, the stub, the column labels and spanner column labels, the table body, and the table footer.
+
+<br>
+
+::: columns
+::: {.column width="70%"}
+**Functions**
+
+-   gt()
+
+-   tab_header()
+
+-   fmt_number()
+
+-   cols_label()
+
+-   tab_style()
+
+-   tab_options()
+:::
+
+::: {.column width="30%"}
+<br>
+
+::: {style="display:flex; justify-content:flex-end; align-items:flex-end; height:70%;"}
+<img src="img/gt.svg" style="width:70%;"/>
+:::
+:::
+:::
+
+## Basic usage
+
+We generally use the [**dplyr**]{style="color:#d5a252;"} package in combination of [**gt**]{style="color:#d5a252;"} for better code readability.
+
+::: columns
+::: {.column width="55%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>%
+  group_by(year) %>%
+  summarise(
+    N = n(),
+    Mean_Age = round(mean(age, na.rm = TRUE), 1),
+    Male_pct = round(100 * mean(gender == "Male", na.rm = TRUE), 1),
+    SelfInjury_pct = round(100 * mean(self_injury == "Yes", na.rm = TRUE), 1),
+    Suicide_pct = round(100 * mean(sui == "Yes", na.rm = TRUE), 1),
+    .groups = "drop") -> summary_table
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>%
+  group_by(year) %>%
+  summarise(
+    N = n(),
+    Mean_Age = round(mean(age, na.rm = TRUE), 1),
+    Male_pct = round(100 * mean(gender == "Male", na.rm = TRUE), 1),
+    SelfInjury_pct = round(100 * mean(self_injury == "Yes", na.rm = TRUE), 1),
+    Suicide_pct = round(100 * mean(sui == "Yes", na.rm = TRUE), 1),
+    .groups = "drop")
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="40%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() 
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() 
+```
+:::
+:::
+
+## Key Features 
+
+::: columns
+::: {.column width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() 
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() 
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") 
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") 
+```
+:::
+:::
+
+## 
+
+::: columns
+::: {.column width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") 
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") 
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50))   # highlight higher suicide rates
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50))   # highlight higher suicide rates
+```
+:::
+:::
+
+## 
+
+::: columns
+::: {.column width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50))  # highlight higher suicide rates
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50))  # highlight higher suicide rates
+
+```
+:::
+
+::: {.column width="10%"}
+:::
+
+::: {.column .fragment .fade-in width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50)) %>%  # highlight higher suicide rates
+   tab_options(
+    table.font.size = px(20)) %>% 
+  tab_footnote(
+    footnote = "Relevant info should be here",
+    locations = cells_body(columns = Suicide_pct, rows = 4))
+```
+
+<br>
+
+```{r}
+#| echo: false
+
+summary_table %>% gt() %>%
+  tab_header(
+    title = "Patient Summary by Year",
+    subtitle = "Counts, demographics, and clinical outcomes") %>%
+  fmt_number(
+    columns = c(Mean_Age, Male_pct, SelfInjury_pct, Suicide_pct),
+    decimals = 0) %>%
+  cols_label(
+    N = "Total Patients (n)",
+    Mean_Age = "Mean Age",
+    Male_pct = "% Male",
+    SelfInjury_pct = "% Self-injury",
+    Suicide_pct = "% Suicide") %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "red")),
+    locations = cells_body(
+      columns = c(Suicide_pct),
+      rows = Suicide_pct > 50)) %>%  # highlight higher suicide rates
+   tab_options(
+    table.font.size = px(20)) %>% 
+   tab_footnote(
+    footnote = "Relevant info should be here",
+    locations = cells_body(columns = Suicide_pct, rows = 4))
+```
+:::
+:::
+
+## GTSUMMARY
+
+<br>
+
+The [**gtsummary**]{style="color:#d5a252;"} package provides an elegant and flexible way to create publication-ready analytical and summary tables using the R programming language. The gtsummary package summarizes data sets, regression models, and more, using sensible defaults with highly customizable capabilities.
+
+<br>
+
+::: columns
+::: {.column width="60%"}
+**Functions**
+
+-   tbl_summary()
+
+-   add_overall()
+
+-   add_p(), bold_p()
+
+-   modify_header()
+
+-   modify_spanning_header()
+
+-   tab_style()
+
+-   tbl_regression()
+
+-   tbl_merge()
+:::
+
+::: {.column width="40%"}
+<br>
+
+::: {style="display:flex; justify-content:flex-end; align-items:flex-end; height:100%;"}
+<img src="img/gtsummary.png" style="width:60%;"/>
+:::
+:::
+:::
+
+## GTsummary Tables
+
+::: columns
+::: {.column width="40%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary()
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary()
+```
+:::
+
+::: {.column width="10%"}
+:::
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year)
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year)  
+```
+:::
+:::
+
+## 
+
+<br>
+
+::: columns
+::: {.column width="40%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T)
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) 
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="55%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p()
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p()  
+```
+:::
+:::
+
+##
+
+<br>
+
+::: columns
+::: {.column width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p()
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p()  
+```
+:::
+
+::: {.column width="10%"}
+:::
+
+::: {.column .fragment .fade-in width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**") # update the column header
+
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**")   # update the column header
+```
+:::
+:::
+
+## 
+
+<br>
+
+::: columns
+::: {.column width="45%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**") # update the column header
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**")  # update the column header
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**") %>%  # update the column header
+  modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4") ~ "**Year**")
+```
+
+<br>
+
+```{r}
+#| echo: false
+data %>% tbl_summary(
+  by = year) %>% 
+  add_overall(last = T) %>% 
+  add_p() %>% 
+  modify_header(label = "**Variable**") %>%  # update the column header
+  modify_spanning_header(c("stat_1", "stat_2", "stat_3", "stat_4") ~ "**Year**") 
+```
+:::
+:::
+
+## Regression Models with gtsummary
+
+<br>
+
+::: columns
+::: {.column width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+glm(sui ~ age + gender + marital_stat + psyk_dis, 
+    data, family = binomial)
+         
+```
+
+<br>
+
+```{r}
+#| echo: false
+glm(sui ~ age + gender + marital_stat + psyk_dis, 
+    data, family = binomial)  
+```
+:::
+
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: true
+#| results: false
+
+glm(sui ~ age + gender + marital_stat + psyk_dis, data, family = binomial) %>% 
+  tbl_regression(exponentiate = TRUE) %>% 
+  modify_header(label = "**Variable**") %>%
+  bold_p(t = 0.001)
+         
+```
+
+<br>
+
+```{r}
+#| echo: false
+glm(sui ~ age + gender + marital_stat + psyk_dis, data, family = binomial) %>% 
+  tbl_regression(exponentiate = TRUE) %>% 
+  modify_header(label = "**Variable**") %>%
+  bold_p(t = 0.001)
+```
+:::
+:::
+
+## Side-by-side Regression Models
+
+<br>
+
+::: columns
+::: {.column width="50%"}
+```{r}
+#| echo: true
+#| results: false
+# model 1
+model_1 <- glm(sui ~ age + gender + marital_stat + psyk_dis, 
+               data, family = binomial) %>% 
+           tbl_regression(exponentiate = TRUE) %>% 
+           modify_header(label = "**Variable**") %>%
+           bold_p(t = 0.001)
+# model 2
+model_2 <- glm(self_injury ~ age + gender + marital_stat + psyk_dis, 
+               data, family = binomial) %>% 
+           tbl_regression(exponentiate = TRUE) %>%
+           modify_header(label = "**Variable**") %>%
+           bold_p(t = 0.001) 
+
+# merge the models
+tbl_merge(tbls = list(model_1, model_2),
+          tab_spanner = c("**Suicide**", "**Self-Injury**"))
+         
+```
+:::
+
+::: {.column .fragment .fade-in width="50%"}
+```{r}
+#| echo: false
+model_1 <- glm(sui ~ age + gender + marital_stat + psyk_dis, 
+               data, family = binomial) %>% 
+  tbl_regression(exponentiate = TRUE) %>% modify_header(label = "**Variable**") %>%
+  bold_p(t = 0.001)
+
+model_2 <- glm(self_injury ~ age + gender + marital_stat + psyk_dis, data, family = binomial) %>% 
+  tbl_regression(exponentiate = TRUE) %>% modify_header(label = "**Variable**") %>%
+  bold_p(t = 0.001)
+
+tbl_merge(
+    tbls = list(model_1, model_2),
+    tab_spanner = c("**Suicide**", "**Self-Injury**")) 
+```
+:::
+:::
+
+## PLOTLY
+
+<br>
+
+Plotly's R graphing library makes interactive, publication-quality graphs. Examples of how to make line plots, scatter plots, area charts, bar charts, error bars, box plots, histograms, heatmaps, subplots, multiple-axes, and 3D charts.
+
+<br>
+
+::: columns
+::: {.column width="60%"}
+**Functions**
+
+-   plotly()
+:::
+
+::: {.column width="40%"}
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+::: {style="position: absolute;bottom: 2%;right: 2%;z-index: 999;"}
+<img src="img/plotly.png" style="width:500px; opacity:0.95;"/>
+:::
+:::
+:::
+
+## 
+
+```{r}
+#| echo: true
+#| results: false
+plot_ly(data = data %>% filter(!(psyk_dis %in% c("None", "Other"))),
+  x = ~psyk_dis, y = ~age, color = ~gender, colors = c("#1f77b4", "#e377c2"),  # blue & magenta for clarity
+  type = "box", boxpoints = "all",    # show all points
+  jitter = 0.4,          # spread the dots
+  pointpos = 0,          # center them
+  marker = list(opacity = 0.6, size = 6), line = list(width = 2)) %>%
+  layout(boxmode = "group", title = list(
+      text = "Age Distribution by Diagnosis and Gender",
+      x = 0.5,  # center title
+      xanchor = "center"),
+    xaxis = list(title = "Diagnosis", tickangle = -30,     # tilt labels for readability
+                 categoryorder = "total descending"),
+    yaxis = list(title = "Age", zeroline = FALSE, rangemode = "tozero"),
+    legend = list(title = list(text = "Gender"), orientation = "h", x = 0.4, y = -0.2)) -> fig
+```
+
+<br>
+
+```{r}
+#| echo: false
+#| fig-width: 12
+#| fig-height: 8
+#| out.width: 100%
+#| fig-align: center
+fig
+```
+
+
+## 
+
+```{r}
+#| echo: true
+#| results: false
+# Summarize data
+plot_data <- data %>% filter(!(psyk_dis %in% c("None", "Other"))) %>% group_by(year, psyk_dis, gender) %>%
+                      summarise(n = n(), self_injury_pct = round(100 * mean(self_injury == "Yes"), 1), suicide_pct = round(100 * mean(sui == "Yes"), 1), .groups = "drop")
+
+head(plot_data)
+```
+
+<br>
+
+```{r}
+#| echo: false
+head(plot_data)
+```
+
+
+<br>
+
+::: {.fragment fragment-index="2"}
+
+::: columns
+::: {.column width="35%"}
+
+```{r}
+#| echo: true
+#| results: false
+
+# Plot
+ggplot(plot_data, 
+       aes(x = n, y = psyk_dis, fill = psyk_dis)) +
+  geom_col() +
+  geom_text(aes(label = n),
+            hjust = -0.1, size = 3) +
+  facet_grid(year ~ gender) +
+  scale_fill_viridis_d(option = "viridis") +
+  labs(
+    x = "Number of Patients",
+    y = "Psychiatric Condition",
+    fill = "Psychiatric Condition",
+    title = "Patient Counts by Psychiatric Condition, 
+             Gender, and Year") +
+  theme_minimal(base_size = 14) +
+  theme(
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11)) -> fig
+
+```
+:::
+
+::: {.column .fragment .fade-in width="65%"}
+
+```{r}
+#| echo: false
+#| out.width: 100%
+#| fig-align: right
+fig
+```
+
+:::
+:::
+:::
+
+
+## 🐦 Bonus - Sankey Diagram
+
+<br>
+
+::: columns
+::: {.column width="35%"}
+```{r}
+#| echo: true
+#| results: false
+df_counts <- data %>% 
+  filter(!(psyk_dis %in% c("None", "Other"))) %>% 
+  group_by(psyk_dis, gender, sui) %>%
+  summarise(n = n(), .groups = "drop")
+
+df_counts %>% 
+  gt() %>%  
+  tab_style(
+            style = cell_fill(color = "#b9c7ce"),
+            locations = cells_column_labels())
+```
+
+<br>
+
+```{r}
+#| echo: false
+df_counts <- data %>% 
+  filter(!(psyk_dis %in% c("None", "Other"))) %>% 
+  group_by(psyk_dis, gender, sui) %>%
+  summarise(n = n(), .groups = "drop")
+
+df_counts %>% 
+  gt() %>%  
+  tab_style(
+            style = cell_fill(color = "#b9c7ce"),  
+            locations = cells_column_labels())
+```
+:::
+
+::: {.column width="5%"}
+:::
+
+::: {.column .fragment .fade-in width="55%"}
+```{r, fig.width=12, fig.height=7}
+#| echo: true
+#| out.width: 100%
+#| fig-align: center
+df_counts %>%
+  ggplot(
+    aes(y = n, axis1 = psyk_dis, axis2 = gender, axis3 = sui)) +
+  geom_alluvium(aes(fill = psyk_dis)) +
+  geom_stratum(alpha = .5) +
+  geom_label(stat = "stratum", aes(label = after_stat(stratum)))+
+  scale_x_discrete(limits = c("Psychiatric Condition", "Gender", 'Suicide'), 
+                   expand = c(.1, .1)) +
+  scale_fill_viridis_d(name = "Psychiatric Condition",option = "viridis") +    
+  theme(
+    axis.text.x = element_text(size=14),
+    axis.ticks.y = element_blank(),         # remove tick marks on the vertical 
+    axis.text.y = element_blank(),          # remove numbers from the vertical
+    panel.background = element_blank(),     # remove the gray background
+    panel.grid.major = element_blank(),     # remove the major grid lines
+    panel.grid.minor = element_blank()) +   # remove the minor grid lines
+  labs(
+    title = "Mapping Patient Trajectories: Psychiatric Condition to 
+             Suicide by Gender") + 
+  theme(legend.position = 'none')   
+```
+:::
+:::
+
